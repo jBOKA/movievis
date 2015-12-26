@@ -23,8 +23,10 @@ class MovieVisualizer:
 
         try:
             self.get_colors_from_folder()
-            self.write_colors_to_stripe()
-            # self.write_colors_to_pie()
+            if (self.vis_type == 'stripe'):
+                self.write_colors_to_stripe()
+            elif (self.vis_type == 'pie'):
+                self.write_colors_to_pie()
         except:
             print "Unbekannter Fehler - Skript beendet\n"
             raise   
@@ -34,24 +36,22 @@ class MovieVisualizer:
     # optionen der executable
     def init_parser(self):
 
-        self.parser = optparse.OptionParser()
-        # self.parser.add_option("-d", "--directory",
-        #     action="store", type="string", dest="dir", default='',
-        #     help="Directory of the images relative to the CWD")
+        self.parser = optparse.OptionParser('Usage: movievis [options] dirname')
+        self.parser.add_option("-t", "--type",
+            action="store", type="string", dest="type", default='stripe',
+            help="Type of the visualization - default: stripe")
 
         (self.options, self.args) = self.parser.parse_args()
 
-        # if not options.dir:   # if filename is not given
-        #     self.parser.error('Directory name not given')
-        # else:
-        #     self.image_directory = options.dir
+        if not self.options.type:   # if type is not given
+            self.parser.error('Type name not given')
+        else:
+            self.vis_type = self.options.type
         
         if (len(self.args) != 1 or (not os.path.isdir(self.args[0])) ):
             self.parser.error("Please give a valid directory name")
         else:
             self.image_directory = self.args[0].rstrip('/')
-            print self.image_directory
-            exit()
 
     
     # feste attribute
@@ -59,7 +59,7 @@ class MovieVisualizer:
 
         self.result_image_stripe_height = 100
         self.result_image_type = "PNG"
-        self.result_image_filename = self.image_directory+'.'+(self.result_image_type.lower())
+        self.result_image_filename = self.image_directory+'-'+self.vis_type+'.'+(self.result_image_type.lower())
         self.color_filename = self.image_directory+'.color-list'
 
 
