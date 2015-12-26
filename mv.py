@@ -4,7 +4,7 @@
 import os
 import optparse
 from matplotlib import pyplot
-from kmeans import Kmeans
+from kmeans.kmeans import Kmeans
 from PIL import Image, ImageDraw
 from multiprocessing import Pool
 try:
