@@ -28,9 +28,10 @@ class MovieVisualizer:
             elif (self.mode == 'image'):
                 self.calc_colors_from_file()
             elif (self.mode == 'video'):
-                self.generate_thumbs_from_video()
-                self.calc_colors_from_folder()
-                self.remove_generated_thumbs()
+                print 'VIDEO MODE NOT SUPPORTED'
+                # self.generate_thumbs_from_video()
+                # self.calc_colors_from_folder()
+                # self.remove_generated_thumbs()
 
             if (self.vis_type == 'stripes'):
                 self.write_colors_to_stripes()
@@ -68,18 +69,23 @@ class MovieVisualizer:
         if (len(self.args) < 1):
             self.parser.error("Please give a file or directory")
         elif (os.path.isdir(self.args[0])):
+            print 'IMAGE DIRECTORY MODE'
             self.mode = 'imagedir'
             self.target_directory = self.args[0].rstrip('/')
         elif (os.path.isfile(self.args[0])):
             try:
                 # if image no error is thrown
+                print 'SINGLE IMAGE MODE'
                 im=Image.open(self.args[0])
                 del im
                 self.mode = 'image'
                 self.target_file = self.args[0]
                 self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 1
             except IOError:
-                # video
+                # error thrown when opening as image, therefore video mode
+                print 'SINGLE VIDEO MODE'
+
+                
 
         else:
             self.parser.error("File or directory not found")
