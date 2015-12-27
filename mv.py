@@ -84,6 +84,7 @@ class MovieVisualizer:
             except IOError:
                 # error thrown when opening as image, therefore video mode
                 print 'SINGLE VIDEO MODE'
+                self.mode = 'video'
 
                 
 
