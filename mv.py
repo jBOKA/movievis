@@ -2,11 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import os
+import random
+import shutil
 import optparse
 from matplotlib import pyplot
 from kmeans.kmeans import Kmeans
 from PIL import Image, ImageDraw
 from multiprocessing import Pool
+from subprocess import Popen, PIPE
 try:
     import cPickle as pickle
 except:
@@ -29,9 +32,10 @@ class MovieVisualizer:
                 self.calc_colors_from_file()
             elif (self.mode == 'video'):
                 print 'VIDEO MODE NOT SUPPORTED'
-                # self.generate_thumbs_from_video()
-                # self.calc_colors_from_folder()
-                # self.remove_generated_thumbs()
+                self.generate_thumbs_from_video()
+                self.calc_colors_from_folder()
+                if (not self.options.keep):
+                    self.remove_generated_thumbs()
 
             if (self.vis_type == 'stripes'):
                 self.write_colors_to_stripes()
@@ -59,6 +63,10 @@ class MovieVisualizer:
             action="store_true", dest="force", default=False,
             help="Set to force new calculation of colors for target")
 
+        self.parser.add_option("-k", "--keep",
+            action="store_true", dest="keep", default=False,
+            help="Keep generated thumbs")
+
         (self.options, self.args) = self.parser.parse_args()
 
         if not self.options.type:   # if type is not given
@@ -74,10 +82,10 @@ class MovieVisualizer:
             self.target_directory = self.args[0].rstrip('/')
         elif (os.path.isfile(self.args[0])):
             try:
-                # if image no error is thrown
-                print 'SINGLE IMAGE MODE'
                 im=Image.open(self.args[0])
                 del im
+                # if image no error is thrown
+                print 'SINGLE IMAGE MODE'
                 self.mode = 'image'
                 self.target_file = self.args[0]
                 self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 1
@@ -85,6 +93,7 @@ class MovieVisualizer:
                 # error thrown when opening as image, therefore video mode
                 print 'SINGLE VIDEO MODE'
                 self.mode = 'video'
+                self.target_file = self.args[0]
 
                 
 
@@ -94,6 +103,10 @@ class MovieVisualizer:
 
     # feste attribute
     def init_attributes(self):
+
+        self.script_location = os.path.dirname(os.path.realpath(__file__))
+
+        self.cwd = os.getcwd()
 
         self.result_image_stripes_height = 100
 
@@ -105,8 +118,7 @@ class MovieVisualizer:
         if (self.mode == 'imagedir'):
             self.result_image_filename = self.target_directory+'-'+self.vis_type+'.'+(self.result_image_type.lower())
             self.color_filename = self.target_directory+'.color-list'
-            
-        elif (self.mode == 'image'):
+        elif (self.mode == 'image' or self.mode == 'video'):
             tmp_result_filename = [os.path.splitext(self.target_file)[0]]
             tmp_result_filename.append(os.path.splitext(self.target_file)[1].replace('.','-'))
             tmp_result_filename.append('-'+self.vis_type)
@@ -114,7 +126,17 @@ class MovieVisualizer:
             tmp_result_filename.append(self.result_image_type.lower())
             self.result_image_filename = ''.join(tmp_result_filename)
             self.color_filename = self.target_file+'.color-list'
-
+        if (self.mode == 'video'):
+            self.thumb_folder = self.target_file+'_tmp_'+str(random.randint(10000,99999))
+            self.target_directory = self.thumb_folder
+            self.ffmpeg_exec_args = [
+                "ffmpeg",
+                '-i',
+                self.target_file,
+                '-vf',
+                'fps=1/10,scale=300:-1',
+                self.thumb_folder+os.path.sep+self.target_file+'_tmp_%05d.png'
+                ]
 
 
 #~  Programmlogik ----------------------------------------------
@@ -123,9 +145,17 @@ class MovieVisualizer:
 
         print 'Generating thumbs in folder: '+self.thumb_folder
 
+        if (not os.path.isdir(self.thumb_folder)):
+            os.mkdir(self.thumb_folder)
+
+        pdflatex_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, stdout=PIPE)
+        pdflatex_process.wait()
+
+
     def remove_generated_thumbs(self):
 
         print 'Removing temporary thumb folder: '+self.thumb_folder
+        shutil.rmtree(self.thumb_folder)
 
     def calc_colors_from_folder(self):
 
