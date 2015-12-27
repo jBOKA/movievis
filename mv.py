@@ -22,12 +22,21 @@ class MovieVisualizer:
         self.init_attributes()
 
         try:
-            self.get_colors_from_folder()
-            if (self.vis_type == 'stripe'):
-                self.write_colors_to_stripe()
+
+            if (self.mode == 'dir'):
+                self.calc_colors_from_folder()
+            elif (self.mode == 'file'):
+                self.calc_colors_from_file()
+
+            if (self.vis_type == 'stripes'):
+                self.write_colors_to_stripes()
+            elif (self.vis_type == 'blocks'):
+                self.write_colors_to_blocks()
             elif (self.vis_type == 'pie'):
                 self.write_colors_to_pie()
+
         except:
+
             print "Unbekannter Fehler - Skript beendet\n"
             raise   
     
@@ -36,45 +45,72 @@ class MovieVisualizer:
     # optionen der executable
     def init_parser(self):
 
-        self.parser = optparse.OptionParser('Usage: movievis [options] dirname')
+        self.parser = optparse.OptionParser('Usage: movievis [options] dirname|filename')
         self.parser.add_option("-t", "--type",
-            action="store", type="string", dest="type", default='stripe',
-            help="Type of the visualization - default: stripe")
+            action="store", type="string", dest="type", default='stripes',
+            help="Type of the visualization - stripes (default), blocks, pie")
+
+        self.parser.add_option("-f", "--force",
+            action="store_true", dest="force", default=False,
+            help="Set to force new calculation of colors for target")
 
         (self.options, self.args) = self.parser.parse_args()
 
         if not self.options.type:   # if type is not given
-            self.parser.error('Type name not given')
+            self.parser.error('Type not given')
         else:
             self.vis_type = self.options.type
         
-        if (len(self.args) != 1 or (not os.path.isdir(self.args[0])) ):
-            self.parser.error("Please give a valid directory name")
+        if (len(self.args) < 1):
+            self.parser.error("Please give a file or directory")
+        elif (os.path.isdir(self.args[0])):
+            self.mode = 'dir'
+            self.target_directory = self.args[0].rstrip('/')
+        elif (os.path.isfile(self.args[0])):
+            self.mode = 'file'
+            self.target_file = self.args[0]
+            self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 1
         else:
-            self.image_directory = self.args[0].rstrip('/')
+            self.parser.error("File or directory not found")
 
-    
+
     # feste attribute
     def init_attributes(self):
 
-        self.result_image_stripe_height = 100
+        self.result_image_stripes_height = 100
+
+        self.result_image_blocks_width = 200
+        self.result_image_blocks_height = 200
+
         self.result_image_type = "PNG"
-        self.result_image_filename = self.image_directory+'-'+self.vis_type+'.'+(self.result_image_type.lower())
-        self.color_filename = self.image_directory+'.color-list'
+
+        if (self.mode == 'dir'):
+            self.result_image_filename = self.target_directory+'-'+self.vis_type+'.'+(self.result_image_type.lower())
+            self.color_filename = self.target_directory+'.color-list'
+            
+        elif (self.mode == 'file'):
+            tmp_result_filename = [os.path.splitext(self.target_file)[0]]
+            tmp_result_filename.append(os.path.splitext(self.target_file)[1].replace('.','-'))
+            tmp_result_filename.append('-'+self.vis_type)
+            tmp_result_filename.append('.')
+            tmp_result_filename.append(self.result_image_type.lower())
+            self.result_image_filename = ''.join(tmp_result_filename)
+            self.color_filename = self.target_file+'.color-list'
+
 
 
 #~  Programmlogik ----------------------------------------------
 
 
-    def get_colors_from_folder(self):
+    def calc_colors_from_folder(self):
 
-        if (not self.read_colors_from_file()):
+        if (self.options.force or not self.read_colorfile()):
 
-            files = sorted(os.listdir(self.image_directory))
+            files = sorted(os.listdir(self.target_directory))
 
             # create filepaths from filenames for pickled function (see after Class)
             def getpath(filename):
-                return os.path.join(self.image_directory,filename)
+                return os.path.join(self.target_directory,filename)
             files = map(getpath,files)
 
             p = Pool(4)
@@ -85,10 +121,27 @@ class MovieVisualizer:
 
             self.colors = colors
 
-            self.save_colors_to_file()
+            self.save_colorfile()
 
 
-    def read_colors_from_file(self):
+    def calc_colors_from_file(self):
+
+        if (self.options.force or not self.read_colorfile()):
+
+            filename = self.target_file
+
+            # create filepaths from filenames for pickled function (see after Class)
+
+            colors = get_colors_from_image(filename, self.number_of_colors)
+
+            # save colors to file
+
+            self.colors = colors
+
+            self.save_colorfile()
+
+
+    def read_colorfile(self):
 
         if (not os.path.isfile(self.color_filename)):
 
@@ -104,7 +157,7 @@ class MovieVisualizer:
 
         return True
 
-    def save_colors_to_file(self):
+    def save_colorfile(self):
 
         print 'Saving colors to file: '+self.color_filename
 
@@ -112,21 +165,41 @@ class MovieVisualizer:
         pickle.dump(self.colors,file)
         file.close()
 
-    def write_colors_to_stripe(self):
+    def write_colors_to_stripes(self):
 
-        print 'Saving visualization to: '+self.result_image_filename
+        print 'Saving '+self.vis_type+' visualization to: '+self.result_image_filename
         
-        im = Image.new('RGB', (len(self.colors),self.result_image_stripe_height), (0,0,0))
+        im = Image.new('RGB', (len(self.colors),self.result_image_stripes_height), (0,0,0))
         draw = ImageDraw.Draw(im)
 
         for index, color in enumerate(self.colors):
 
-            draw.line((index, 0)+(index,self.result_image_stripe_height),color,1)
+            draw.line((index, 0)+(index,self.result_image_stripes_height),color,1)
 
         del draw
         im.save(self.result_image_filename,self.result_image_type)
 
+
+    def write_colors_to_blocks(self):
+
+        print 'Saving '+self.vis_type+' visualization to: '+self.result_image_filename
+        
+        im = Image.new('RGB', (len(self.colors)*self.result_image_blocks_width,self.result_image_blocks_height), (255,0,0))
+        draw = ImageDraw.Draw(im)
+
+        for index, color in enumerate(self.colors):
+
+            draw.rectangle(
+                (index*self.result_image_blocks_width, 0)+(((index+1)*self.result_image_blocks_width)-1,self.result_image_blocks_height),
+                color)
+
+        del draw
+        im.save(self.result_image_filename,self.result_image_type)
+    
+
     def write_colors_to_pie(self):
+
+        print 'Saving '+self.vis_type+' visualization to: '+self.result_image_filename
 
         sizes = []
         colors = []
@@ -148,17 +221,6 @@ class MovieVisualizer:
         pyplot.savefig(self.result_image_filename, bbox_inches='tight')
 
 
-    # def create_color_picture(self, target_filename, image_size, color):
-
-    #     filename, file_extension = os.path.splitext(target_filename)
-
-    #     result_image = Image.new('RGB', image_size, color)
-
-    #     result_image.save(filename+'.color.png','PNG')
-
-    #     result_image.close()
-    
-    
 
 def get_color_from_image(filepath):
 
@@ -170,6 +232,17 @@ def get_color_from_image(filepath):
     im.close()
 
     return color
+
+def get_colors_from_image(filepath, number_of_colors):
+
+    print 'processing '+filepath
+
+    kmeans = Kmeans(number_of_colors)
+    im = Image.open(filepath)
+    colors = kmeans.run(im)
+    im.close()
+
+    return colors
 
 
 
