@@ -23,10 +23,14 @@ class MovieVisualizer:
 
         try:
 
-            if (self.mode == 'dir'):
+            if (self.mode == 'imagedir'):
                 self.calc_colors_from_folder()
-            elif (self.mode == 'file'):
+            elif (self.mode == 'image'):
                 self.calc_colors_from_file()
+            elif (self.mode == 'video'):
+                self.generate_thumbs_from_video()
+                self.calc_colors_from_folder()
+                self.remove_generated_thumbs()
 
             if (self.vis_type == 'stripes'):
                 self.write_colors_to_stripes()
@@ -64,12 +68,19 @@ class MovieVisualizer:
         if (len(self.args) < 1):
             self.parser.error("Please give a file or directory")
         elif (os.path.isdir(self.args[0])):
-            self.mode = 'dir'
+            self.mode = 'imagedir'
             self.target_directory = self.args[0].rstrip('/')
         elif (os.path.isfile(self.args[0])):
-            self.mode = 'file'
-            self.target_file = self.args[0]
-            self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 1
+            try:
+                # if image no error is thrown
+                im=Image.open(self.args[0])
+                del im
+                self.mode = 'image'
+                self.target_file = self.args[0]
+                self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 1
+            except IOError:
+                # video
+
         else:
             self.parser.error("File or directory not found")
 
@@ -84,11 +95,11 @@ class MovieVisualizer:
 
         self.result_image_type = "PNG"
 
-        if (self.mode == 'dir'):
+        if (self.mode == 'imagedir'):
             self.result_image_filename = self.target_directory+'-'+self.vis_type+'.'+(self.result_image_type.lower())
             self.color_filename = self.target_directory+'.color-list'
             
-        elif (self.mode == 'file'):
+        elif (self.mode == 'image'):
             tmp_result_filename = [os.path.splitext(self.target_file)[0]]
             tmp_result_filename.append(os.path.splitext(self.target_file)[1].replace('.','-'))
             tmp_result_filename.append('-'+self.vis_type)
@@ -101,6 +112,13 @@ class MovieVisualizer:
 
 #~  Programmlogik ----------------------------------------------
 
+    def generate_thumbs_from_video(self):
+
+        print 'Generating thumbs in folder: '+self.thumb_folder
+
+    def remove_generated_thumbs(self):
+
+        print 'Removing temporary thumb folder: '+self.thumb_folder
 
     def calc_colors_from_folder(self):
 
