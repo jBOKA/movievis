@@ -297,7 +297,7 @@ def get_colors_from_image(filepath, number_of_colors):
 
     print 'processing '+filepath
 
-    kmeans = Kmeans(number_of_colors)
+    kmeans = Kmeans(number_of_colors, 6, 5, 200) # default 6,5,200
     im = Image.open(filepath)
     colors = kmeans.run(im)
     im.close()
