@@ -128,12 +128,13 @@ class MovieVisualizer:
         if (self.mode == 'video'):
             self.thumb_folder = self.target_file+'_tmp_'+str(random.randint(10000,99999))
             self.target_directory = self.thumb_folder
+            self.fps = float(self.args[1]) if (len(self.args) > 1) else float(0.1)
             self.ffmpeg_exec_args = [
                 "ffmpeg",
                 '-i',
                 self.target_file,
                 '-vf',
-                'fps=1/10,scale=300:-1',
+                'fps='+str(self.fps)+',scale=300:-1',
                 self.thumb_folder+os.path.sep+self.target_file+'_tmp_%05d.png'
                 ]
             self.thumbs_generated = False
