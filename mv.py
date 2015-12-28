@@ -52,7 +52,7 @@ class MovieVisualizer:
     # optionen der executable
     def init_parser(self):
 
-        self.parser = optparse.OptionParser('Usage: movievis [options] dirname|filename')
+        self.parser = optparse.OptionParser('Usage: movievis [options] imagefolder|video [fps]|image [numberofcolors]')
         self.parser.add_option("-t", "--type",
             action="store", type="string", dest="type", default='stripes',
             help="Type of the visualization - stripes (default), blocks, pie")
