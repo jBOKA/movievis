@@ -35,9 +35,7 @@ class MovieVisualizer:
                 self.calc_colors_from_folder()
                 self.remove_generated_thumbs()
 
-            if (self.vis_type == 'stripes'):
-                self.write_colors_to_stripes()
-            elif (self.vis_type == 'blocks'):
+            if (self.vis_type == 'blocks'):
                 self.write_colors_to_blocks()
             elif (self.vis_type == 'pie'):
                 self.write_colors_to_pie()
@@ -55,20 +53,16 @@ class MovieVisualizer:
         self.parser = optparse.OptionParser('Usage: movievis [options] imagefolder|video [fps]|image [numberofcolors]')
         
         self.parser.add_option("-t", "--type",
-            action="store", type="string", dest="type", default='stripes',
-            help="Type of the visualization - stripes (default), blocks, pie")
+            action="store", type="string", dest="type", default='blocks',
+            help="Type of the visualization - blocks (default), pie")
 
-        self.parser.add_option("-bh", "--blockheight",
-            action="store", type="int", dest="blockheight", default='200',
-            help="Block (visualization type) height (default: 200)")
+        self.parser.add_option("--blockheight",
+            action="store", type="int", dest="blockheight", default='150',
+            help="Block (visualization type) height (default: 150)")
 
-        self.parser.add_option("-bw", "--blockwidth",
-            action="store", type="int", dest="blockwidth", default='200',
-            help="Block (visualization type) width (default: 200)")
-
-        self.parser.add_option("-sh", "--stripesheight",
-            action="store", type="int", dest="stripesheight", default='200',
-            help="Stripes (visualization type) height (default: 200)")
+        self.parser.add_option("--blockwidth",
+            action="store", type="int", dest="blockwidth", default='1',
+            help="Block (visualization type) width (default: 1)")
 
         self.parser.add_option("-f", "--force",
             action="store_true", dest="force", default=False,
@@ -119,8 +113,6 @@ class MovieVisualizer:
         self.cwd = os.getcwd()
 
         self.colors = []
-
-        self.result_image_stripes_height = self.options.stripesheight
 
         self.result_image_blocks_width = self.options.blockwidth
         self.result_image_blocks_height = self.options.blockheight
@@ -242,20 +234,6 @@ class MovieVisualizer:
         file = open(self.color_filename,'wb')
         pickle.dump(self.colors,file)
         file.close()
-
-    def write_colors_to_stripes(self):
-
-        print 'Saving '+self.vis_type+' visualization to: '+self.result_image_filename
-        
-        im = Image.new('RGB', (len(self.colors),self.result_image_stripes_height), (0,0,0))
-        draw = ImageDraw.Draw(im)
-
-        for index, color in enumerate(self.colors):
-
-            draw.line((index, 0)+(index,self.result_image_stripes_height),color,1)
-
-        del draw
-        im.save(self.result_image_filename,self.result_image_type)
 
 
     def write_colors_to_blocks(self):
