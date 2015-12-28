@@ -53,9 +53,22 @@ class MovieVisualizer:
     def init_parser(self):
 
         self.parser = optparse.OptionParser('Usage: movievis [options] imagefolder|video [fps]|image [numberofcolors]')
+        
         self.parser.add_option("-t", "--type",
             action="store", type="string", dest="type", default='stripes',
             help="Type of the visualization - stripes (default), blocks, pie")
+
+        self.parser.add_option("-bh", "--blockheight",
+            action="store", type="int", dest="blockheight", default='200',
+            help="Block (visualization type) height (default: 200)")
+
+        self.parser.add_option("-bw", "--blockwidth",
+            action="store", type="int", dest="blockwidth", default='200',
+            help="Block (visualization type) width (default: 200)")
+
+        self.parser.add_option("-sh", "--stripesheight",
+            action="store", type="int", dest="stripesheight", default='200',
+            help="Stripes (visualization type) height (default: 200)")
 
         self.parser.add_option("-f", "--force",
             action="store_true", dest="force", default=False,
@@ -107,10 +120,10 @@ class MovieVisualizer:
 
         self.colors = []
 
-        self.result_image_stripes_height = 100
+        self.result_image_stripes_height = self.options.stripesheight
 
-        self.result_image_blocks_width = 200
-        self.result_image_blocks_height = 200
+        self.result_image_blocks_width = self.options.blockwidth
+        self.result_image_blocks_height = self.options.blockheight
 
         self.result_image_type = "PNG"
 
