@@ -283,7 +283,7 @@ class MovieVisualizer:
 
         pyplot.axis('equal')
         
-        pyplot.savefig(self.result_image_filename, bbox_inches='tight')
+        pyplot.savefig(self.result_image_filename, bbox_inches='tight', transparent=True)
 
         # pyplot.show()
 
