@@ -86,7 +86,7 @@ class MovieVisualizer:
                 print 'SINGLE IMAGE MODE'
                 self.mode = 'image'
                 self.target_file = self.args[0]
-                self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 1
+                self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 5
             except IOError:
                 # error thrown when opening as image, therefore video mode
                 print 'SINGLE VIDEO MODE'
