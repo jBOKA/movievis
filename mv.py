@@ -31,11 +31,9 @@ class MovieVisualizer:
             elif (self.mode == 'image'):
                 self.calc_colors_from_file()
             elif (self.mode == 'video'):
-                print 'VIDEO MODE NOT SUPPORTED'
                 self.generate_thumbs_from_video()
                 self.calc_colors_from_folder()
-                if (not self.options.keep):
-                    self.remove_generated_thumbs()
+                self.remove_generated_thumbs()
 
             if (self.vis_type == 'stripes'):
                 self.write_colors_to_stripes()
@@ -105,8 +103,9 @@ class MovieVisualizer:
     def init_attributes(self):
 
         self.script_location = os.path.dirname(os.path.realpath(__file__))
-
         self.cwd = os.getcwd()
+
+        self.colors = []
 
         self.result_image_stripes_height = 100
 
@@ -137,25 +136,33 @@ class MovieVisualizer:
                 'fps=1/10,scale=300:-1',
                 self.thumb_folder+os.path.sep+self.target_file+'_tmp_%05d.png'
                 ]
+            self.thumbs_generated = False
 
 
 #~  Programmlogik ----------------------------------------------
 
     def generate_thumbs_from_video(self):
 
-        print 'Generating thumbs in folder: '+self.thumb_folder
+        if (self.options.force or not self.read_colorfile()):
 
-        if (not os.path.isdir(self.thumb_folder)):
-            os.mkdir(self.thumb_folder)
+            self.thumbs_generated = True
 
-        pdflatex_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, stdout=PIPE)
-        pdflatex_process.wait()
+            print 'Generating thumbs in folder: '+self.thumb_folder
+
+            if (not os.path.isdir(self.thumb_folder)):
+                os.mkdir(self.thumb_folder)
+
+            pdflatex_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd)
+            # pdflatex_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, stdout=PIPE)
+            pdflatex_process.wait()
 
 
     def remove_generated_thumbs(self):
 
-        print 'Removing temporary thumb folder: '+self.thumb_folder
-        shutil.rmtree(self.thumb_folder)
+        if (not self.options.keep and self.thumbs_generated):
+
+            print 'Removing temporary thumb folder: '+self.thumb_folder
+            shutil.rmtree(self.thumb_folder)
 
     def calc_colors_from_folder(self):
 
@@ -202,13 +209,15 @@ class MovieVisualizer:
 
             return False
 
-        print 'Reading colors from file: '+self.color_filename
+        if (len(self.colors) < 1):
 
-        file = open(self.color_filename,'rb')
-        colors = pickle.load(file)
-        file.close()
+            print 'Reading colors from file: '+self.color_filename
 
-        self.colors = colors
+            file = open(self.color_filename,'rb')
+            colors = pickle.load(file)
+            file.close()
+
+            self.colors = colors
 
         return True
 
@@ -258,22 +267,26 @@ class MovieVisualizer:
 
         sizes = []
         colors = []
-        for index, color in enumerate(self.colors):
+        for index, color in enumerate(reversed(self.colors)):
             colors.append((color[0].astype(float)/255,color[1].astype(float)/255,color[2].astype(float)/255))
-            sizes.append(index)
+            sizes.append(1)
 
-        pyplot.pie(sizes,              # data
-            colors=colors,      # array of colours
-            shadow=False,        # enable shadow
-            startangle=70       # starting angle
+        pyplot.figure(num=1, figsize=(35, 35))
+
+        wedges, texts = pyplot.pie(sizes,
+            colors=colors,
+            shadow=False,
+            startangle=90
             )
+        for w in wedges:
+            w.set_linewidth(0)
+
         pyplot.axis('equal')
-
-        pyplot.show()
-
-        fig = pyplot.figure()
-
+        
         pyplot.savefig(self.result_image_filename, bbox_inches='tight')
+
+        # pyplot.show()
+
 
 
 
