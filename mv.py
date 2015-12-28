@@ -153,9 +153,9 @@ class MovieVisualizer:
             if (not os.path.isdir(self.thumb_folder)):
                 os.mkdir(self.thumb_folder)
 
-            pdflatex_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd)
-            # pdflatex_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, stdout=PIPE)
-            pdflatex_process.wait()
+            generate_thumbs_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd)
+            # generate_thumbs_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, stdout=PIPE)
+            generate_thumbs_process.wait()
 
 
     def remove_generated_thumbs(self):
