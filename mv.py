@@ -52,7 +52,7 @@ class MovieVisualizer:
                 self.remove_generated_thumbs()
 
             print ''
-            print 'Calculated in: '+str(time.time()-start_time)+'s'
+            print 'Calculated in: '+str(round(time.time()-start_time,2))+'s'
             print ''
 
 
