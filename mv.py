@@ -188,7 +188,7 @@ class MovieVisualizer:
 
     def generate_thumbs_from_video(self):
 
-        if (self.options.force or not self.read_colorfile() or self.vis_mode == 'tiles'):
+        if (self.options.force or not self.read_colorfile() or self.options.type == 'tiles'):
 
             self.thumbs_generated = True
 
