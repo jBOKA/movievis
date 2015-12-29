@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import time
 import random
 import shutil
 import optparse
@@ -23,6 +24,8 @@ class MovieVisualizer:
     def __init__(self):
 
         print ''
+
+        start = time.time()
 
         self.init_parser()
         self.init_attributes()
@@ -49,6 +52,8 @@ class MovieVisualizer:
                 self.remove_generated_thumbs()
 
             print ''
+            print 'Calculated in: '+str(start - time.time())+'s'
+
 
         except:
 
