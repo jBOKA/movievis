@@ -140,6 +140,8 @@ class MovieVisualizer:
 
             if (not (is_image or is_video)):
                 self.parser.error("Given file isn't a valid Image/Video")
+        else:
+            is_file = False
 
         if (not (is_dir or is_file)):
             self.parser.error("File or directory not found")
