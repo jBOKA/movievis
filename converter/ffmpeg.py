@@ -510,6 +510,49 @@ class FFMpeg(object):
         """
         return self.thumbnails(fname, [(time, outfile, size, quality)])
 
+    # def thumbnails(self, fname, option_list):
+    #     """
+    #     Create one or more thumbnails of video.
+    #     @param option_list: a list of tuples like:
+    #         (time, outfile, size=None, quality=DEFAULT_JPEG_QUALITY)
+    #         see documentation of `converter.FFMpeg.thumbnail()` for details.
+
+    #     >>> FFMpeg().thumbnails('test1.ogg', [(5, '/tmp/shot.png', '320x240'),
+    #     >>>                                   (10, '/tmp/shot2.png', None, 5)])
+    #     """
+    #     if not os.path.exists(fname):
+    #         raise IOError('No such file: ' + fname)
+
+    #     # cmds = [self.ffmpeg_path, '-i', fname, '-y', '-an']
+    #     cmds = [self.ffmpeg_path]
+    #     for thumb in option_list:
+
+    #         cmds.extend([
+    #             '-ss', str(thumb[0]),
+    #             '-i', fname, '-y', '-an'
+    #             ])
+            
+    #         if len(thumb) > 2 and thumb[2]:
+    #             cmds.extend(['-s', str(thumb[2])])
+
+    #         cmds.extend([
+    #             '-f', 'image2', '-vframes', '1',
+    #             thumb[1],
+    #             '-q:v', str(FFMpeg.DEFAULT_JPEG_QUALITY if len(thumb) < 4 else str(thumb[3])),
+    #         ])
+
+    #     print ' '.join(cmds)
+    #     exit()
+
+    #     p = self._spawn(cmds)
+    #     _, stderr_data = p.communicate()
+    #     if stderr_data == '':
+    #         raise FFMpegError('Error while calling ffmpeg binary')
+    #     stderr_data.decode(console_encoding)
+    #     if any(not os.path.exists(option[1]) for option in option_list):
+    #         raise FFMpegError('Error creating thumbnail: %s' % stderr_data)
+
+
     def thumbnails(self, fname, option_list):
         """
         Create one or more thumbnails of video.

@@ -22,6 +22,8 @@ class MovieVisualizer:
 
     def __init__(self):
 
+        print ''
+
         self.init_parser()
         self.init_attributes()
 
@@ -31,20 +33,27 @@ class MovieVisualizer:
                 self.calc_colors_from_folder()
             elif (self.mode == 'image'):
                 self.calc_colors_from_file()
-            elif (self.mode == 'video'):
+            if (self.mode == 'video'):
                 self.generate_thumbs_from_video()
-                self.calc_colors_from_folder()
+                if (self.options.type != 'tiles'):
+                    self.calc_colors_from_folder()
+
+            if (self.options.type == 'blocks'):
+                self.write_colors_to_blocks()
+            elif (self.options.type == 'pie'):
+                self.write_colors_to_pie()
+            elif (self.options.type == 'tiles'):
+                self.write_colors_to_tiles()
+
+            if (self.mode == 'video'):
                 self.remove_generated_thumbs()
 
-            if (self.vis_type == 'blocks'):
-                self.write_colors_to_blocks()
-            elif (self.vis_type == 'pie'):
-                self.write_colors_to_pie()
+            print ''
 
         except:
 
-            print "Unbekannter Fehler - Skript beendet\n"
-            raise   
+            print "Unknown error occurred\n"
+            raise
     
 #~  Initialisierungszeugs ----------------------------------------------
 
@@ -59,11 +68,19 @@ class MovieVisualizer:
 
         self.parser.add_option("--blockheight",
             action="store", type="int", dest="blockheight", default='150',
-            help="Block (visualization type) height (default: 150)")
+            help="Block height (default: 150)")
 
         self.parser.add_option("--blockwidth",
             action="store", type="int", dest="blockwidth", default='1',
-            help="Block (visualization type) width (default: 1)")
+            help="Block width (default: 1)")
+
+        self.parser.add_option("--tilewidth",
+            action="store", type="int", dest="tilewidth", default='320',
+            help="Tile width (default: 1)")
+
+        self.parser.add_option("-c", "--framecount",
+            action="store", type="int", dest="framecount", default='400',
+            help="Frame count (default: 400)")
 
         self.parser.add_option("-f", "--force",
             action="store_true", dest="force", default=False,
@@ -75,11 +92,6 @@ class MovieVisualizer:
 
         (self.options, self.args) = self.parser.parse_args()
 
-        if not self.options.type:   # if type is not given
-            self.parser.error('Type not given')
-        else:
-            self.vis_type = self.options.type
-        
         if (len(self.args) < 1):
             self.parser.error("Please give a file or directory")
 
@@ -141,26 +153,32 @@ class MovieVisualizer:
         self.result_image_type = "PNG"
 
         if (self.mode == 'imagedir'):
-            self.result_image_filename = self.target_directory+'-'+self.vis_type+'.'+(self.result_image_type.lower())
+            self.result_image_filename = self.target_directory+'-'+self.options.type+'.'+(self.result_image_type.lower())
             self.color_filename = self.target_directory+'.color-list'
         elif (self.mode == 'image' or self.mode == 'video'):
             tmp_result_filename = [os.path.splitext(self.target_file)[0]]
             tmp_result_filename.append(os.path.splitext(self.target_file)[1].replace('.','-'))
-            tmp_result_filename.append('-'+self.vis_type)
+            tmp_result_filename.append('-'+self.options.type)
             tmp_result_filename.append('.')
             tmp_result_filename.append(self.result_image_type.lower())
             self.result_image_filename = ''.join(tmp_result_filename)
             self.color_filename = self.target_file+'.color-list'
         if (self.mode == 'video'):
-            self.thumb_folder = self.target_file+'_tmp_'+str(random.randint(10000,99999))
+            self.thumb_folder = self.target_file.replace('.','_')+'_tmp_'+str(random.randint(10000,99999))
             self.target_directory = self.thumb_folder
-            self.fps = float(self.args[1]) if (len(self.args) > 1) else float(0.1)
+            self.set_video_stream()
+            if (self.options.type == 'tiles'):
+                self.make_frame_count_square()
+            self.calc_frame_distance()
+            self.calc_seconds_distance()
+            self.calc_thumb_size()
+            self.fps = 1/self.seconds_distance_float
             self.ffmpeg_exec_args = [
                 "ffmpeg",
                 '-i',
                 self.target_file,
                 '-vf',
-                'fps='+str(self.fps)+',scale=300:-1',
+                'fps='+str(self.fps)+',scale='+str(self.options.tilewidth)+':-1',
                 self.thumb_folder+os.path.sep+self.target_file+'_tmp_%05d.png'
                 ]
             self.thumbs_generated = False
@@ -170,18 +188,80 @@ class MovieVisualizer:
 
     def generate_thumbs_from_video(self):
 
-        if (self.options.force or not self.read_colorfile()):
+        if (self.options.force or not self.read_colorfile() or self.vis_mode == 'tiles'):
 
             self.thumbs_generated = True
 
-            print 'Generating thumbs in folder: '+self.thumb_folder
+            print 'Generating '+str(self.options.framecount)+' thumbs (size: '+str(self.thumb_width)+'x'+str(self.thumb_height)+') in folder: '+self.thumb_folder
 
             if (not os.path.isdir(self.thumb_folder)):
                 os.mkdir(self.thumb_folder)
 
-            generate_thumbs_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd)
-            # generate_thumbs_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, stdout=PIPE)
+            # print self.total_frames, self.options.framecount, self.frame_distance_float
+
+            # thumb_list_args = []
+            # for i in range(self.options.framecount):
+            #     thumb_list_args.append((
+            #         round(i*self.frame_distance_float)/self.video_stream.video_fps, # in seconds
+            #         self.thumb_folder+os.path.sep+'{:08d}'.format(i)+'.png',
+            #         str(self.thumb_width)+'x'+str(self.thumb_height)
+            #         ))
+
+            # video_converter = VideoConverter()
+            # video_converter.thumbnails(self.target_file,thumb_list_args)
+
+            generate_thumbs_process = Popen(self.ffmpeg_exec_args, cwd=self.cwd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                     close_fds=True)
             generate_thumbs_process.wait()
+
+            # might have produced framecount+1 images
+            files = sorted(os.listdir(self.target_directory))
+            if (len(files) > self.options.framecount):
+                for i in range(self.options.framecount,len(files)):
+                    os.remove(os.path.join(self.target_directory,files[i]))
+
+
+
+    def calc_frame_distance(self):
+
+        framecorrection = 5 # to compensate fps flaws...
+        self.total_frames = int(self.video_stream.video_fps*self.video_info.format.duration)-framecorrection
+        if (self.options.framecount > self.total_frames):
+            self.parser.error("Not enough frames in video")
+        self.frame_distance_float = float(self.total_frames)/float(self.options.framecount)
+
+
+    def calc_seconds_distance(self):
+
+        second_correction = 0 # to compensate fps flaws...
+        self.seconds_distance_float = (self.video_info.format.duration-second_correction) / self.options.framecount
+
+        print 'Calculated distance for given framecount: ~'+str(int(self.frame_distance_float))+' frames = '+str(round(self.seconds_distance_float,2))+'s'
+
+
+    def make_frame_count_square(self):
+
+        new_framecount = int(float(self.options.framecount)**(0.5))**2
+        if (new_framecount != self.options.framecount):
+            print "Framecount corrected to squarenumber: "+str(new_framecount)
+            self.options.framecount = new_framecount
+
+
+    def calc_thumb_size(self):
+
+        aspect_ratio = float(self.video_stream.video_width)/float(self.video_stream.video_height)
+        self.thumb_width = self.options.tilewidth
+        self.thumb_height = int(round(self.thumb_width/aspect_ratio))
+
+    def set_video_stream(self):
+
+        self.video_stream = None
+        for stream in self.video_info.streams:
+            if stream.type == 'video':
+                self.video_stream = stream
+                break
+        if self.video_stream is None:
+            self.parser.error('Given file has no video stream')
 
 
     def remove_generated_thumbs(self):
@@ -194,6 +274,8 @@ class MovieVisualizer:
     def calc_colors_from_folder(self):
 
         if (self.options.force or not self.read_colorfile()):
+
+            print 'Calculating colors from folder...'
 
             files = sorted(os.listdir(self.target_directory))
 
@@ -216,6 +298,8 @@ class MovieVisualizer:
     def calc_colors_from_file(self):
 
         if (self.options.force or not self.read_colorfile()):
+
+            print 'Calculating colors from file...'
 
             filename = self.target_file
 
@@ -259,7 +343,7 @@ class MovieVisualizer:
 
     def write_colors_to_blocks(self):
 
-        print 'Saving '+self.vis_type+' visualization to: '+self.result_image_filename
+        print 'Saving '+self.options.type+' visualization to: '+self.result_image_filename
         
         im = Image.new('RGB', (len(self.colors)*self.result_image_blocks_width,self.result_image_blocks_height), (255,0,0))
         draw = ImageDraw.Draw(im)
@@ -276,7 +360,7 @@ class MovieVisualizer:
 
     def write_colors_to_pie(self):
 
-        print 'Saving '+self.vis_type+' visualization to: '+self.result_image_filename
+        print 'Saving '+self.options.type+' visualization to: '+self.result_image_filename
 
         sizes = []
         colors = []
@@ -298,14 +382,42 @@ class MovieVisualizer:
         
         pyplot.savefig(self.result_image_filename, bbox_inches='tight', transparent=True)
 
-        # pyplot.show()
 
 
+    def write_colors_to_tiles(self):
+
+        print 'Saving '+self.options.type+' visualization to: '+self.result_image_filename
+
+        files = sorted(os.listdir(self.target_directory))
+
+        im = Image.new(
+            'RGB',
+            (
+                int(float(self.options.framecount)**(0.5))*self.thumb_width,
+                int(float(self.options.framecount)**(0.5))*self.thumb_height
+            ),
+            (0,0,0)
+        )
+
+        for index, file in enumerate(files):
+
+            thumb_im = Image.open(os.path.join(self.thumb_folder, file))
+
+            im.paste(thumb_im,((
+                (index % int(float(self.options.framecount)**(0.5)))*self.thumb_width,
+                (index / int(float(self.options.framecount)**(0.5)))*self.thumb_height
+                ))
+            )
+            
+            thumb_im.close()
+
+        im.save(self.result_image_filename,self.result_image_type)
+    
 
 
 def get_color_from_image(filepath):
 
-    print 'processing '+filepath
+    # print 'processing '+filepath
 
     kmeans = Kmeans(1)
     im = Image.open(filepath)
@@ -316,7 +428,7 @@ def get_color_from_image(filepath):
 
 def get_colors_from_image(filepath, number_of_colors):
 
-    print 'processing '+filepath
+    # print 'processing '+filepath
 
     kmeans = Kmeans(number_of_colors, 6, 5, 200) # default 6,5,200
     im = Image.open(filepath)
@@ -324,7 +436,6 @@ def get_colors_from_image(filepath, number_of_colors):
     im.close()
 
     return colors
-
 
 
 if __name__ == '__main__':
