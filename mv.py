@@ -5,6 +5,7 @@ import os
 import random
 import shutil
 import optparse
+from converter import Converter as VideoConverter
 from matplotlib import pyplot
 from kmeans.kmeans import Kmeans
 from PIL import Image, ImageDraw
@@ -81,28 +82,48 @@ class MovieVisualizer:
         
         if (len(self.args) < 1):
             self.parser.error("Please give a file or directory")
-        elif (os.path.isdir(self.args[0])):
+
+        if (os.path.isdir(self.args[0])):
+            is_dir = True
             print 'IMAGE DIRECTORY MODE'
             self.mode = 'imagedir'
             self.target_directory = self.args[0].rstrip('/')
-        elif (os.path.isfile(self.args[0])):
+        else:
+            is_dir = False
+
+        if (not is_dir and os.path.isfile(self.args[0])):
+            is_file = True
+            # IMAGE ?
             try:
                 im=Image.open(self.args[0])
                 del im
-                # if image no error is thrown
+                # YES
+                is_image = True
                 print 'SINGLE IMAGE MODE'
                 self.mode = 'image'
                 self.target_file = self.args[0]
                 self.number_of_colors = int(self.args[1]) if (len(self.args) > 1) else 5
             except IOError:
-                # error thrown when opening as image, therefore video mode
-                print 'SINGLE VIDEO MODE'
-                self.mode = 'video'
-                self.target_file = self.args[0]
+                # NO
+                is_image = False
 
-                
+            # IF NOT IMAGE: VIDEO ?
+            if (not is_image):
+                video_converter = VideoConverter()
+                tmp_video_info = video_converter.probe(self.args[0])
+                if (tmp_video_info):
+                    is_video = True
+                    print 'SINGLE VIDEO MODE'
+                    self.mode = 'video'
+                    self.video_info = tmp_video_info
+                    self.target_file = self.args[0]
+                else:
+                    is_video = False
 
-        else:
+            if (not (is_image or is_video)):
+                self.parser.error("Given file isn't a valid Image/Video")
+
+        if (not (is_dir or is_file)):
             self.parser.error("File or directory not found")
 
 
