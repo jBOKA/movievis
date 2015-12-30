@@ -66,11 +66,11 @@ class MovieVisualizer:
     # optionen der executable
     def init_parser(self):
 
-        self.parser = optparse.OptionParser('Usage: movievis [options] imagefolder|video [fps]|image [numberofcolors]')
+        self.parser = optparse.OptionParser('Usage:\nmovievis [-t TYPE] [--force] target\nmovievis [--framecount=400] [--keep] moviefile\nTARGET may be either a folder with pictures, a picture (with second argument the number of colors) or a movie file')
         
         self.parser.add_option("-t", "--type",
             action="store", type="string", dest="type", default='blocks',
-            help="Type of the visualization - blocks (default), pie")
+            help="Type of the visualization - blocks (default), pie, tiles (only moviefiles)")
 
         self.parser.add_option("--blockheight",
             action="store", type="int", dest="blockheight", default='150',
@@ -90,7 +90,7 @@ class MovieVisualizer:
 
         self.parser.add_option("-f", "--force",
             action="store_true", dest="force", default=False,
-            help="Set to force new calculation of colors for target")
+            help="Force new calculation of colors for target (obsolete for type=tiles)")
 
         self.parser.add_option("-k", "--keep",
             action="store_true", dest="keep", default=False,
