@@ -35,6 +35,7 @@ Options:
 
 *movievis* uses
 
++ ffmpeg to grab frames from video files, supported codecs depend on ffmpeg of course
 + some python libs: matplotlib, PIL, multiprocessing, cPickle (make sure these are installed)
 + [*k*-means clustering](https://en.wikipedia.org/wiki/K-means_clustering "Wikipedia") to identify key colors. The *k*-means implementation for images is taken from Ze'ev Gilovitz [blog post](http://blog.zeevgilovitz.com/detecting-dominant-colours-in-python/) and [on github](https://github.com/ZeevG/python-dominant-image-colour). (included)
 + an ffmpeg wrapper by Senko Rasic et.al. found [here](https://github.com/senko/python-video-converter) (included)
